@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>segments</title>
+  <style>
+    body {
+      background-color: #0e0e0e;
+      color: #e0e0e0;
+      font-family: monospace;
+      padding: 0px 0px 0px 0px;
+      margin: 0px 0px 0px 0px;
+    }
+    #canvas{
+      width: 100%;
+      height: 100%;
+      background-color: #0e0e0e;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    centerX = canvas.width/2
+    centerY = canvas.height/2
+
+
+    // Track mouse position
+    canvas.addEventListener("mousemove", (e) => {
+      centerX = e.clientX;
+      centerY = e.clientY;
+    });
+    function distance(x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function draw() {
+      x = Math.random()*20*(Math.random() < 0.5 ? -1 : 1);
+      y = Math.random()*20*(Math.random() < 0.5 ? -1 : 1);
+
+      ctx.beginPath();
+        ctx.moveTo(centerX-x,centerY-y); // starting point
+        ctx.lineTo(centerX, centerY); // ending point
+        ctx.strokeStyle = `hsl(${Math.random()*360}, 100%, 50%)`; // vibrant blue
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
