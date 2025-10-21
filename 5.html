@@ -98,7 +98,7 @@
 
         square.heat += heatConstant * falloff*5;
 
-        square.heat *= 0.99; // cooling
+        square.heat *= 0.996; // cooling
         square.heat = Math.max(0, Math.min(1, square.heat)); // clamp
 
         ctx.fillStyle = thermalColor(square.heat);
