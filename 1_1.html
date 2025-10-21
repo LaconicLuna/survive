@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>colorful stuffs</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 0px 0px 0px 0px;
+      margin: 0px 0px 0px 0px;
+    }
+    #canvas{
+      width: 100%;
+      height: 100%;
+      background-color: #0e0e0e;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Resize canvas to fill the window
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    centerX = canvas.width/2
+    centerY = canvas.height/2
+
+
+    // Track mouse position
+    canvas.addEventListener("mousemove", (e) => {
+      centerX = e.clientX;
+      centerY = e.clientY;
+    });
+    points = [];
+    speed=0.5;
+    for (let i = 0; i < 1000; i++) {
+  let edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+  let x, y;
+
+  switch (edge) {
+    case 0: // top
+      x = Math.random() * canvas.width;
+      y = 0;
+      break;
+    case 1: // right
+      x = canvas.width;
+      y = Math.random() * canvas.height;
+      break;
+    case 2: // bottom
+      x = Math.random() * canvas.width;
+      y = canvas.height;
+      break;
+    case 3: // left
+      x = 0;
+      y = Math.random() * canvas.height;
+      break;
+  }
+  g=Math.random()*255;
+  points.push({
+    x: x,
+    y: y,
+    size: 20,
+    color: `rgb(${g}, ${g}, ${g})`, // super vibrant
+    speed: Math.random() * 10,
+  });
+}
+
+    function draw() {
+      //ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let point of points) {
+        ctx.fillStyle = point.color;
+        ctx.fillRect(point.x, point.y, point.size, point.size);
+        dx = centerX - point.x;
+        dy = centerY - point.y;
+        angle = Math.atan2(dy,dx);
+        point.x += 5*Math.cos(angle);
+        point.y += 5*Math.sin(angle);
+        if(Math.abs(point.x - centerX) < 10 && Math.abs(point.y - centerY) < 10 ){
+          let edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+          let x, y;
+          
+          switch (edge) {
+            case 0: // top
+              x = Math.random() * canvas.width;
+              y = 0;
+              break;
+            case 1: // right
+              x = canvas.width;
+              y = Math.random() * canvas.height;
+              break;
+            case 2: // bottom
+              x = Math.random() * canvas.width;
+              y = canvas.height;
+              break;
+            case 3: // left
+              x = 0;
+              y = Math.random() * canvas.height;
+              break;
+          }
+          g = Math.random()*255;
+          point.x = x;
+          point.y = y;
+          point.color= `rgb(${g}, ${g}, ${g})`;
+          point.speed= Math.random() * 10;
+        }
+        
+        
+      }
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
+
