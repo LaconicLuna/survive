@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>arcs</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0e0e0e;
+            overflow: hidden;
+            font-family: monospace;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #0e0e0e;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <input type="range" id="voltSlider" min="0" max="500" step="1" value="20">
+        <label for="voltSlider">Voltage: <span id="voltValue">20</span></label>
+        <input type="color" id="colorPicker" value="#9ACEE5">
+        <label for="colorPicker">electricity Color</label>
+
+    </div>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        volts = 20;
+        color = document.getElementById("colorPicker").value;
+
+        function hexToRGB(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return { r, g, b };
+        }
+        const slider = document.getElementById("voltSlider");
+        const display = document.getElementById("voltValue");
+        const colorPicker = document.getElementById("colorPicker");
+        colorPicker.addEventListener("input", () => {
+            color = colorPicker.value;
+        });
+        slider.addEventListener("input", () => {
+            volts = parseFloat(slider.value);
+            display.textContent = volts.toFixed(3);
+        });
+        let mouse = { x: 0, y: 0 };
+        canvas.addEventListener("mousemove", e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        let metals = [];
+        canvas.addEventListener("click", e => {
+            metals.push({ x: e.clientX, y: e.clientY, charge: 0 });
+        });
+        function getDistance(x, y) {
+            const dx = x.x - y.x;
+            const dy = x.y - y.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        function drawArc(from, to) {
+            const segments = 10;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            for (let i = 1; i < segments; i++) {
+                const t = i / segments;
+                const x = from.x + (to.x - from.x) * t + (Math.random() - 0.5) * 10;
+                const y = from.y + (to.y - from.y) * t + (Math.random() - 0.5) * 10;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(to.x, to.y);
+            const { r, g, b } = hexToRGB(color);
+            ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let metal of metals) {
+                ctx.fillStyle = 'rgb(100,100,100)';
+                ctx.fillRect(metal.x-5, metal.y-5, 10, 10);
+            }
+            for (let metal of metals) {
+                metal.charge = getDistance(metal, mouse) < volts ? volts : 0;
+            }
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (let metal of metals) {
+                    if (metal.charge > 0) {
+                        for (let metal1 of metals) {
+                            if (metal !== metal1 && metal1.charge === 0 && getDistance(metal, metal1) < volts) {
+                                metal1.charge = volts;
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            for (let metal of metals) {
+                if (metal.charge > 0) {
+                    if(getDistance(metal,mouse)<volts){
+                        drawArc(metal, mouse);
+                    
+                    }
+                    for (let metal1 of metals) {
+                        if (metal !== metal1 && getDistance(metal, metal1) < volts) {
+                            drawArc(metal, metal1);
+                        }
+                    }
+                }
+            }
+
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+
+</html>
