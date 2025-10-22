@@ -234,8 +234,8 @@
                 ball.y += ball.vy;
 
                 // Apply Friction (Damping)
-                ball.vx *= 0.98;
-                ball.vy *= 0.98;
+                ball.vx *= 0.99;
+                ball.vy *= 0.99;
 
                 // Wall Boundaries (Reversing velocity and correcting position)
                 const dampening = 0.9;
