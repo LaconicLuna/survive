@@ -70,7 +70,7 @@
         });
         slider.addEventListener("input", () => {
             volts = parseFloat(slider.value);
-            display.textContent = volts.toFixed(3);
+            display.textContent = volts;
         });
         let mouse = { x: 0, y: 0 };
         canvas.addEventListener("mousemove", e => {
