@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pool</title>
+    <style>
+        body {
+            background: #222;
+            color: #e0e0e0;
+            font-family: monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            /* horizontal center */
+            align-items: center;
+            /* vertical center */
+            height: 100vh;
+            /* full screen height */
+        }
+
+        #canvas {
+            width: 66vw;
+            height: 66vh;
+            display: block;
+            border: 8px solid #573c1f;
+            background: rgb(50, 180, 50);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        function resizeCanvas() {
+            // Set canvas width and height in CSS pixels
+            canvas.style.width = '66vw';
+            canvas.style.height = '66vh';
+
+            // Get actual display size in pixels
+            const displayWidth = window.innerWidth * 0.66;
+            const displayHeight = window.innerHeight * 0.66;
+
+            // Set actual canvas resolution to match display size
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        balls = [];
+        radius = 10;
+        centerX = canvas.width / 2
+        centerY = canvas.height / 2
+        const pocketMouth = 60; // width of the pocket opening
+        const pocketRadius = 20; // the actual "drop-in" hole radius
+
+        const pockets = [
+            { x: 0, y: 0, isCorner: true },                   // top-left
+            { x: canvas.width / 2, y: 0, isCorner: false },   // top-middle (side pocket)
+            { x: canvas.width, y: 0, isCorner: true },        // top-right
+            { x: 0, y: canvas.height, isCorner: true },       // bottom-left
+            { x: canvas.width / 2, y: canvas.height, isCorner: false }, // bottom-middle (side pocket)
+            { x: canvas.width, y: canvas.height, isCorner: true }       // bottom-right
+        ];
+
+
+
+        balls.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: 0,
+            vy: 0,
+            radius: radius,
+            color: `rgb(255,255,255)`
+        });
+        for (let j = 0; j < 16; j++) {
+            balls.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: 0,
+                vy: 0,
+                radius: radius,
+                color: `rgb(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255})`
+            });
+        }
+
+        let isAiming = false;
+        let mouse = { x: 0, y: 0 };
+
+
+
+
+        function shootCueBall() {
+            const cue = balls[0];
+            const dx = mouse.x - cue.x;
+            const dy = mouse.y - cue.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const power = Math.min(distance * 0.1, 20); // cap max power
+
+            const angle = Math.atan2(dy, dx);
+
+            cue.vx = -Math.cos(angle) * power;
+            cue.vy = -Math.sin(angle) * power;
+        }
+        document.addEventListener("mousedown", (e) => {
+            isAiming = true;
+            updateMouse(e);
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (isAiming) updateMouse(e);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isAiming) {
+                shootCueBall();
+                isAiming = false;
+            }
+        });
+
+
+        function updateMouse(e) {
+            const rect = canvas.getBoundingClientRect(); // Get canvas position and size
+            mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        let isDragging = false;
+        let dragStart = null;
+        let dragEnd = null;
+
+
+        function resolveCollision(b1, b2) {
+            const dx = b2.x - b1.x;
+            const dy = b2.y - b1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = b1.radius + b2.radius;
+
+            if (dist < minDist) {
+                // Normalize direction
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Move balls so they no longer overlap (position correction)
+                const overlap = minDist - dist;
+                const correctionRatio = 0.5;
+                b1.x -= nx * overlap * correctionRatio;
+                b1.y -= ny * overlap * correctionRatio;
+                b2.x += nx * overlap * correctionRatio;
+                b2.y += ny * overlap * correctionRatio;
+
+                // Tangent vector
+                const tx = -ny;
+                const ty = nx;
+
+                // Dot product tangent
+                const dpTan1 = b1.vx * tx + b1.vy * ty;
+                const dpTan2 = b2.vx * tx + b2.vy * ty;
+
+                // Dot product normal
+                const dpNorm1 = b1.vx * nx + b1.vy * ny;
+                const dpNorm2 = b2.vx * nx + b2.vy * ny;
+
+                // Swap normal components (perfectly elastic collision)
+                const m1 = dpNorm2;
+                const m2 = dpNorm1;
+
+                // Update velocities
+                b1.vx = tx * dpTan1 + nx * m1;
+                b1.vy = ty * dpTan1 + ny * m1;
+                b2.vx = tx * dpTan2 + nx * m2;
+                b2.vy = ty * dpTan2 + ny * m2;
+            }
+        }
+
+
+
+
+
+
+        function draw() {
+            // 1. Drawing the table and pockets
+            ctx.fillStyle = `rgb(50,180,50)`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let pocket of pockets) {
+                if (pocket.mouthDir === "corner") {
+                    // Draw a V shape
+                    ctx.beginPath();
+                    ctx.moveTo(pocket.x, pocket.y);
+                    ctx.lineTo(pocket.x + (pocket.x === 0 ? pocketMouth : -pocketMouth), pocket.y);
+                    ctx.lineTo(pocket.x, pocket.y + (pocket.y === 0 ? pocketMouth : -pocketMouth));
+                    ctx.closePath();
+                    ctx.fillStyle = "black";
+                    ctx.fill();
+                } else {
+                    // Middle pockets (horizontal mouth)
+                    ctx.beginPath();
+                    ctx.ellipse(pocket.x, pocket.y, pocketMouth / 2, pocketRadius, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = "black";
+                    ctx.fill();
+                }
+
+                // Draw the actual drop hole
+                ctx.beginPath();
+                ctx.arc(pocket.x, pocket.y, pocketRadius, 0, Math.PI * 2);
+                ctx.fillStyle = "black";
+                ctx.fill();
+            }
+
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    resolveCollision(balls[i], balls[j]);
+                }
+            }
+
+            // 3. Movement, Boundaries, and Damping (Updating ball state)
+            for (let ball of balls) {
+                // Apply position update based on current velocity
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Apply Friction (Damping)
+                ball.vx *= 0.98;
+                ball.vy *= 0.98;
+
+                // Wall Boundaries (Reversing velocity and correcting position)
+                const dampening = 0.9;
+
+                // Left wall
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.vx *= -dampening;
+                }
+
+                // Right wall
+                if (ball.x + ball.radius > canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx *= -dampening;
+                }
+
+                // Top wall
+                if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.vy *= -dampening;
+                }
+
+                // Bottom wall
+                if (ball.y + ball.radius > canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy *= -dampening;
+                }
+
+                // Stop balls that are moving too slowly to prevent jitter
+                if (Math.abs(ball.vx) < 0.05 && Math.abs(ball.vy) < 0.05) {
+                    ball.vx = 0;
+                    ball.vy = 0;
+                }
+            }
+
+            // 4. Pocketing Check
+
+const cornerCatchmentRadius = pocketRadius + 10;  // e.g., 30
+const sideCatchmentRadius = 15;                   // smaller radius for side pockets
+
+for (let i = balls.length - 1; i >= 0; i--) {
+    const ball = balls[i];
+    for (let pocket of pockets) {
+        const dist = getDistance(ball.x, ball.y, pocket.x, pocket.y);
+
+        if (pocket.isCorner) {
+            if (dist < cornerCatchmentRadius) {
+                if (i === 0) {
+                    // cue ball reset
+                    ball.x = canvas.width / 2;
+                    ball.y = canvas.height / 2;
+                    ball.vx = 0;
+                    ball.vy = 0;
+                } else {
+                    balls.splice(i, 1);
+                }
+                break;
+            }
+        } else {
+            // Side pockets (middle top/bottom) with smaller radius
+            if (dist < sideCatchmentRadius) {
+                if (i === 0) {
+                    ball.x = canvas.width / 2;
+                    ball.y = canvas.height / 2;
+                    ball.vx = 0;
+                    ball.vy = 0;
+                } else {
+                    balls.splice(i, 1);
+                }
+                break;
+            }
+        }
+    }
+}
+
+
+
+
+
+            // 5. Drawing the balls (after all position updates)
+            for (let ball of balls) {
+                // 1. Draw shadow below the ball
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y + 2, ball.radius, 0, Math.PI * 2); // Slight Y-offset
+                ctx.fillStyle = 'rgb(20,20,20)';
+                ctx.fill();
+
+                // 2. Draw the ball itself
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = ball.color;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(ball.x - 3, ball.y - 3, 2, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255,255,255,0.6)";
+                ctx.fill();
+            }
+
+            // 6. Aiming Line (Cue)
+            if (isAiming && balls.length > 0) {
+                const cue = balls[0];
+                ctx.strokeStyle = "white";
+                ctx.beginPath();
+                ctx.moveTo(cue.x, cue.y);
+                ctx.lineTo(mouse.x, mouse.y);
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+
+</html>
