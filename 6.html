@@ -273,43 +273,43 @@
 
             // 4. Pocketing Check
 
-const cornerCatchmentRadius = pocketRadius + 10;  // e.g., 30
-const sideCatchmentRadius = 15;                   // smaller radius for side pockets
+            const cornerCatchmentRadius = pocketRadius + 10;  // e.g., 30
+            const sideCatchmentRadius = 15;                   // smaller radius for side pockets
 
-for (let i = balls.length - 1; i >= 0; i--) {
-    const ball = balls[i];
-    for (let pocket of pockets) {
-        const dist = getDistance(ball.x, ball.y, pocket.x, pocket.y);
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const ball = balls[i];
+                for (let pocket of pockets) {
+                    const dist = getDistance(ball.x, ball.y, pocket.x, pocket.y);
 
-        if (pocket.isCorner) {
-            if (dist < cornerCatchmentRadius) {
-                if (i === 0) {
-                    // cue ball reset
-                    ball.x = canvas.width / 2;
-                    ball.y = canvas.height / 2;
-                    ball.vx = 0;
-                    ball.vy = 0;
-                } else {
-                    balls.splice(i, 1);
+                    if (pocket.isCorner) {
+                        if (dist < cornerCatchmentRadius) {
+                            if (i === 0) {
+                                // cue ball reset
+                                ball.x = canvas.width / 2;
+                                ball.y = canvas.height / 2;
+                                ball.vx = 0;
+                                ball.vy = 0;
+                            } else {
+                                balls.splice(i, 1);
+                            }
+                            break;
+                        }
+                    } else {
+                        // Side pockets (middle top/bottom) with smaller radius
+                        if (dist < sideCatchmentRadius) {
+                            if (i === 0) {
+                                ball.x = canvas.width / 2;
+                                ball.y = canvas.height / 2;
+                                ball.vx = 0;
+                                ball.vy = 0;
+                            } else {
+                                balls.splice(i, 1);
+                            }
+                            break;
+                        }
+                    }
                 }
-                break;
             }
-        } else {
-            // Side pockets (middle top/bottom) with smaller radius
-            if (dist < sideCatchmentRadius) {
-                if (i === 0) {
-                    ball.x = canvas.width / 2;
-                    ball.y = canvas.height / 2;
-                    ball.vx = 0;
-                    ball.vy = 0;
-                } else {
-                    balls.splice(i, 1);
-                }
-                break;
-            }
-        }
-    }
-}
 
 
 
@@ -337,12 +337,41 @@ for (let i = balls.length - 1; i >= 0; i--) {
             // 6. Aiming Line (Cue)
             if (isAiming && balls.length > 0) {
                 const cue = balls[0];
+                const dx = mouse.x - cue.x;
+                const dy = mouse.y - cue.y;
+                const aimAngle = Math.atan2(dy, dx);
+                const shootAngle = aimAngle + Math.PI; // opposite direction for shot
+
+                const lineLength = 1000;
+                const offsetDistance = cue.radius * 0.8;
+
+                // Perpendicular offset vector for side lines
+                const offsetX = Math.cos(aimAngle + Math.PI / 2) * offsetDistance;
+                const offsetY = Math.sin(aimAngle + Math.PI / 2) * offsetDistance;
+
+                // Draw main aiming line: ball center → mouse pointer
                 ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(cue.x, cue.y);
                 ctx.lineTo(mouse.x, mouse.y);
                 ctx.stroke();
+
+                // Draw left offset line: left side of ball → forward along shootAngle
+                ctx.lineWidth = 1.2;
+                ctx.strokeStyle = "rgba(255,255,255,0.7)";
+                ctx.beginPath();
+                ctx.moveTo(cue.x - offsetX, cue.y - offsetY);
+                ctx.lineTo(cue.x - offsetX + Math.cos(shootAngle) * lineLength, cue.y - offsetY + Math.sin(shootAngle) * lineLength);
+                ctx.stroke();
+
+                // Draw right offset line: right side of ball → forward along shootAngle
+                ctx.beginPath();
+                ctx.moveTo(cue.x + offsetX, cue.y + offsetY);
+                ctx.lineTo(cue.x + offsetX + Math.cos(shootAngle) * lineLength, cue.y + offsetY + Math.sin(shootAngle) * lineLength);
+                ctx.stroke();
             }
+
 
             requestAnimationFrame(draw);
         }
